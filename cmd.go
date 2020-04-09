@@ -12,14 +12,14 @@ import (
 func runCommand() error {
 	if isInputFromPipe() {
 		print("data is from pipe")
-		return toUppercase(os.Stdin, os.Stdout)
+		return aHisto(os.Stdin, os.Stdout)
 	} else {
 		file, e := getFile()
 		if e != nil {
 			return e
 		}
 		defer file.Close()
-		return toUppercase(file, os.Stdout)
+		return aHisto(file, os.Stdout)
 	}
 }
 
@@ -43,7 +43,7 @@ func getFile() (*os.File, error){
 	return file, nil
 }
 
-func toUppercase(r io.Reader, w io.Writer) error {
+func aHisto(r io.Reader, w io.Writer) error {
 	scanner := bufio.NewScanner(bufio.NewReader(r))
 	for scanner.Scan() {
 		_, e := fmt.Fprintln(

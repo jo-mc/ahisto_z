@@ -8,10 +8,10 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "uppercase",
-	Short: "Transform the input to uppercase letters",
-	Long: `Simple demo of the usage of linux pipes
-Transform the input (pipe of file) to uppercase letters`,
+	Use:   "ahisto",
+	Short: "Reads a file or pipe of samtools depth -a output and calculates histogram of read depths.",
+	Long: `From a simple demo of the usage of linux pipes
+Transform the samtools depth input (pipe of file) to a histogram`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		print = logNoop
 		if flags.verbose {
