@@ -12,7 +12,7 @@
             "program": "${fileDirname}",
             "env": {},
             "args": ["-f",
-                    "depth.txt"
+                    "chrM.depth.txt"
                 ]
         }
     ]
