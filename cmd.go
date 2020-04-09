@@ -51,10 +51,17 @@ func aHisto(r io.Reader, w io.Writer) error {
 	scanner := bufio.NewReader(r)
 	var depthLine []string
 	var newval int
+	var lastval int
+	lastval = -1 
 	var chrSize uint64
 	var histsize = 512
 	var histogram[512] uint32  // depth histogram for whole chromosome 1 - 511 no 0 as this will be to big
 	var maxhisto uint32 // region max of histo from 1 to 510
+	var zerogram[100] uint32
+	var maxzero uint32
+	var maxzerogram uint32
+	var maxzerocon uint32
+	var zerosize = 100
 	maxhisto = 0
 //	var regionhistogram[512] uint32 // depth histogram for each region
 	var maxregionhisto uint32
@@ -106,7 +113,7 @@ func aHisto(r io.Reader, w io.Writer) error {
 					maxhisto = histogram[i]
 				}
 			}
-			printRegion(lastRegion,histogram[:],chrSize, maxhisto, maxregionhisto)
+			printRegion(lastRegion,histogram[:],chrSize, maxhisto, maxregionhisto,histsize)
 			maxhisto = 0
 			maxregionhisto = 0
 		}
@@ -117,7 +124,7 @@ func aHisto(r io.Reader, w io.Writer) error {
 		if uint32(newval) > maxregionhisto {
 			maxregionhisto = uint32(newval)
 		}
-		if newval > histsize - 1 {
+		if newval > histsize - 2 {
 			histogram[histsize-1] = histogram[histsize-1] + 1
 		} else {
 			histogram[newval] = histogram[newval] + 1
@@ -127,13 +134,33 @@ func aHisto(r io.Reader, w io.Writer) error {
 		// fmt.Println(depthLine[1])
 		// fmt.Println(depthLine[2])
 		lastRegion = regionName
+		if newval == 0 {
+			maxzero = maxzero + 1
+		} else 	if  (lastval == 0) {
+			if maxzero > uint32(zerosize - 2) {
+			zerogram[zerosize - 1] = zerogram[zerosize - 1] + 1
+			maxzerocon = maxzero
+			} else {	
+			zerogram[maxzero] = zerogram[maxzero] + 1
+			}
+			maxzero = 0
+			for i := 1; i < (zerosize-1); i++ {
+				if zerogram[i] > maxzerogram {
+					maxzerogram = zerogram[i]
+				}	
+			}
 		}
-		for i := 1; i < 511; i++ {
+		lastval = newval
+	}
+	for i := 1; i < (histsize-1); i++ {
 			if histogram[i] > maxhisto {
 				maxhisto = histogram[i]
 			}	
-		}		
-		printRegion(lastRegion,histogram[:],chrSize,maxhisto,maxregionhisto)
+	}		
+	printRegion(lastRegion,histogram[:],chrSize,maxhisto,maxregionhisto,histsize)
+	fmt.Println("><><>< zerogram: ")
+	printRegion(regionName,zerogram[:],chrSize,maxzerogram,maxzerocon,zerosize)
+	
 	return nil
 }
 
@@ -145,15 +172,15 @@ func fileExists(filepath string) bool {
 	return !info.IsDir()
 }
 
-func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uint32, maxregionhisto uint32  ) {
+func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uint32, maxregionhisto uint32 , size int ) {
 
 	fmt.Println("first 8 and last values of histogram:",region)
-	for i := 0; i < 8; i++ {
+	for i := 1; i < 8; i++ {
 		fmt.Println("histogram[",i,"] : ",histogram[i])
 	}
-	fmt.Println("histogram[511] : ",histogram[511])
+	fmt.Println("histogram[",size-1,"] : ",histogram[size-1])
 	fmt.Println("Number of data read: ",chrsize)
-	fmt.Println("Maximum value 1-510: ",maxhisto)
+	fmt.Println("Maximum value 1-",size-1,": ",maxhisto)
 	fmt.Println("Maximum value : ",maxregionhisto)
 	fmt.Println("Zero count : ",histogram[0])
 }
