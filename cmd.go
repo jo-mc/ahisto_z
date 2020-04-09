@@ -57,17 +57,15 @@ func aHisto(r io.Reader, w io.Writer) error {
 	var histsize = 512
 	var histogram[512] uint32  // depth histogram for whole chromosome 1 - 511 no 0 as this will be to big
 	var maxhisto uint32 // region max of histo from 1 to 510
-	var zerogram[100] uint32
 	var maxzero uint32
 	var maxzerogram uint32
 	var maxzerocon uint32
-	var zerosize = 100
+	const zerosize = 500
+	var zerogram[zerosize] uint32
 	maxhisto = 0
-//	var regionhistogram[512] uint32 // depth histogram for each region
+
 	var maxregionhisto uint32
 //	var regionpercenthistogram[512] uint // region % histogram
-//	var regionzero[1024] uint32  // region zero run counts
-//	var regionmax int32 // max depth per region, ie greater than 511
 	var regionName string
 	var lastRegion string
 	lastRegion = "_last_region" 
@@ -108,7 +106,7 @@ func aHisto(r io.Reader, w io.Writer) error {
 		// end get data from file line
 		// now test if we have new region
 		if regionName != lastRegion {
-			for i := 1; i < 511; i++ {
+			for i := 1; i < (histsize -1); i++ {
 				if histogram[i] > maxhisto {
 					maxhisto = histogram[i]
 				}
@@ -116,6 +114,18 @@ func aHisto(r io.Reader, w io.Writer) error {
 			printRegion(lastRegion,histogram[:],chrSize, maxhisto, maxregionhisto,histsize)
 			maxhisto = 0
 			maxregionhisto = 0
+			chrSize = 0
+			for i := range histogram {
+				histogram[i] = 0
+			}
+			fmt.Println("><><>< zerogram: ")
+			printRegion(regionName,zerogram[:],chrSize,maxzerogram,maxzerocon,zerosize)
+			for i := range zerogram {
+				zerogram[i] = 0
+			}		
+			maxzero = 0
+			maxzerocon = 0
+			lastval = -1	
 		}
 		// end new region test 
 		//fmt.Println(newval)
