@@ -1,0 +1,10 @@
+chrM	1	8000
+chrM	2	8001
+chrM	3	8002
+chrM	4	8003
+chrM	5	8004
+chrM	6	8005
+chrM	7	8005
+chrM	8	7997
+chrM	9	8008
+chrM	10	8009

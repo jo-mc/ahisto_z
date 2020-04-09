@@ -9,7 +9,7 @@ import (
 
 var rootCmd = &cobra.Command{
 	Use:   "ahisto",
-	Short: "Reads a file or pipe of samtools depth -a output and calculates histogram of read depths.",
+	Short: "Reads a file or pipe of samtools depth -a output and calculates histogram of read depths. If line contains one number histogram will be calculated for that. ",
 	Long: `From a simple demo of the usage of linux pipes
 Transform the samtools depth input (pipe of file) to a histogram`,
 	RunE: func(cmd *cobra.Command, args []string) error {
