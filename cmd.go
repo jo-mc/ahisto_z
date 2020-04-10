@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -60,7 +61,7 @@ func aHisto(r io.Reader, w io.Writer) error {
 	var maxzero uint32
 	var maxzerogram uint32
 	var maxzerocon uint32
-	const zerosize = 500
+	const zerosize =  500
 	var zerogram [zerosize]uint32
 	maxhisto = 0
 
@@ -70,15 +71,31 @@ func aHisto(r io.Reader, w io.Writer) error {
 	var lastRegion string
 	lastRegion = "_last_region"
 
+	// output file setup
+	t := time.Now()
+	ft := t.Format("060102T1504") + "_depthHist.R"
+	afile, err := os.Create(ft)
+	check(err)
+	defer afile.Close()
+	// write header
+	l, err := afile.WriteString("p <- plot_ly()\n")
+	if err != nil {
+		fmt.Println(err, " Error writing header to ", ft)
+	} else {
+		fmt.Println(l, "bytes of Header written to ", ft)
+	}
+	// end file setup
+
 	for {
 		// text expected "chr1  1   1" region, position , readdepth
 		// (if -a specified in samtools depth the position will be 0- length of region) otherwise 0 depths are omitted from output)
 
 		// depthLine = strings.Fields(scanner.Text())
 		line, err := (scanner.ReadString(10)) // read up to eol
+
 		if err == io.EOF {
-			fmt.Println("finshed reading input")
-			break
+			fmt.Println("finshed reading input")   // if EOF is at end of line last line will be skipped
+			break									// if EOF is on  a newline  then this is ok. could add check for line and have another exit at end of loop?
 		}
 		// get file line current value to add to histogram field 0 or 3
 		depthLine = strings.Fields(line)
@@ -105,12 +122,12 @@ func aHisto(r io.Reader, w io.Writer) error {
 		// end get data from file line
 		// now test if we have new region
 		if regionName != lastRegion {
-			for i := 1; i < (histsize - 1); i++ {
+			for i := 1; i < (histsize - 1); i++ {  // find max of histogram excluding first and last array spots
 				if histogram[i] > maxhisto {
 					maxhisto = histogram[i]
 				}
 			}
-			printRegion(lastRegion, histogram[:], chrSize, maxhisto, maxregionhisto, histsize)
+			printRegion(lastRegion, histogram[:], chrSize, maxhisto, maxregionhisto, histsize, afile, true)
 			maxhisto = 0
 			maxregionhisto = 0
 			
@@ -118,7 +135,7 @@ func aHisto(r io.Reader, w io.Writer) error {
 				histogram[i] = 0
 			}
 			fmt.Println("><><>< zerogram: ")
-			printRegion(lastRegion, zerogram[:], chrSize, maxzerogram, maxzerocon, zerosize)
+			printRegion(lastRegion, zerogram[:], chrSize, maxzerogram, maxzerocon, zerosize, afile, false)
 			for i := range zerogram {
 				zerogram[i] = 0
 			}
@@ -133,7 +150,7 @@ func aHisto(r io.Reader, w io.Writer) error {
 		// update histogram
 		chrSize = chrSize + 1 // count of data in region
 		if uint32(newval) > maxregionhisto {
-			maxregionhisto = uint32(newval)
+			maxregionhisto = uint32(newval)   // maximum depth in current region
 		}
 		if newval > histsize-2 {
 			histogram[histsize-1] = histogram[histsize-1] + 1
@@ -174,10 +191,11 @@ func aHisto(r io.Reader, w io.Writer) error {
 			maxzerogram = zerogram[i]
 		}
 	}
-	printRegion(lastRegion, histogram[:], chrSize, maxhisto, maxregionhisto, histsize)
+	printRegion(lastRegion, histogram[:], chrSize, maxhisto, maxregionhisto, histsize, afile, true)
 	fmt.Println("><><>< zerogram: ")
-	printRegion(lastRegion, zerogram[:], uint64(maxzero), maxzerogram, maxzerocon, zerosize)
+	printRegion(lastRegion, zerogram[:], uint64(maxzero), maxzerogram, maxzerocon, zerosize, afile, false)
 
+	l, err = afile.WriteString("\n\np\n")
 	return nil
 }
 
@@ -189,7 +207,7 @@ func fileExists(filepath string) bool {
 	return !info.IsDir()
 }
 
-func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uint32, maxregionhisto uint32, size int) {
+func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uint32, maxregionhisto uint32, size int, afile *os.File, rout bool) {
 
 	fmt.Println("first 8 and last values of histogram:", region)
 	for i := 1; i < 8; i++ {
@@ -200,26 +218,78 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 	fmt.Println("Maximum value 1-", size-1, ": ", maxhisto)
 	fmt.Println("Maximum value : ", maxregionhisto)
 	fmt.Println("Zero count : ", histogram[0])
+
+
 	// output for plotly in R
-	fmt.Println(region, " <- list(")
-	fmt.Println("line = list(shape = \"linear\"),")
-	fmt.Println("mode = \"lines+markers\",")
-	fmt.Println("name = \"'",region,"'\",")
-	fmt.Println("type = \"scatter\",")
-	fmt.Println("x = c(")
-	for i := 1; i < (size-2); i++ {
-		fmt.Print(histogram[i],", ")
-	}
-	fmt.Print(histogram[size-1])
-	fmt.Println("),")
+	fmt.Println("only first ten values printed see file for more.\n",region, " <- list(")
+	rString := "\n\n" + region + " <- list("
+	fmt.Print("line = list(shape = \"spline\"),")
+	rString += "line = list(shape = \"spline\"),"
+	fmt.Print("mode = \"lines+markers\",")
+	rString += "mode = \"lines+markers\","
+	fmt.Print("name = \"",region,"\",")
+	rString += "name = \"" + region + "\","
+	fmt.Print("type = \"scatter\",")
+	rString += "type = \"scatter\",\n"
 
-	fmt.Println("y = c(")
+	fmt.Print("y = c(")
+	sString := "y = c("
 	for i := 1; i < (size-2); i++ {
-		fmt.Print(i,", ")
+		if chrsize != 0  {
+			if i < 10 {
+			fmt.Print((uint64(histogram[i])*100)/chrsize,", ")  // % of read depth
+			}
+			sString += strconv.FormatUint((uint64(histogram[i])*100/chrsize),10) + ", "
+		} else {
+			if i < 10 {
+			fmt.Print(histogram[i],", ")  // % of read depth
+			}
+			sString += strconv.FormatUint(uint64(histogram[i]),10) + ", "
+		}
+		
 	}
-	fmt.Print(size-1)
+	fmt.Print(histogram[size-2])  // omit last value of array which stores count of values above size
+	sString += strconv.FormatUint(uint64(histogram[size-2]),10)
 	fmt.Println("),")
+	sString += "),\n"
 
-	fmt.Println("hoverinfo = \"name\"")
-	fmt.Println(")")
+	fmt.Print("x = c(")
+	sString += "x = c("
+	for i := 1; i < (size-2); i++ {
+		if i < 10 {
+			fmt.Print(i,", ")
+		}
+		sString += strconv.Itoa(i) + ", "
+	}
+	fmt.Print(size-2)
+	sString += strconv.Itoa(size-2)
+	fmt.Println("),")
+	sString += "),\n"
+
+	aStr := "hovertemplate = \"Depth: %{x}\""
+	fmt.Print(")\n")
+	aStr += ")\n"
+	aStr += "p <- add_trace" 
+	aStr += "(p, line="+region+"$line, mode="+region+"$mode, "
+	aStr += "name="+region+"$name, type="+region+"$type, "
+	aStr += "x="+region+"$x, y="+region+"$y, " + "text="+region+"$text, "
+	aStr += "hovertemplate="+region+"$hovertemplate)"
+	
+	fmt.Println(aStr)
+
+	if rout {
+	_, err := afile.WriteString(rString)
+	_, err = afile.WriteString(sString)
+	_, err = afile.WriteString(aStr)
+	if err != nil {
+			fmt.Println(err, " Error writing region ", region, " to ", afile.Name())
+	}
+	}
+}
+
+
+func check(e error) {
+	if e != nil {
+			panic(e)
+	}
 }
