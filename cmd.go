@@ -239,7 +239,8 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 			if i < 10 {
 			fmt.Print((uint64(histogram[i])*100)/chrsize,", ")  // % of read depth
 			}
-			sString += strconv.FormatUint((uint64(histogram[i])*100/chrsize),10) + ", "
+			//sString += strconv.FormatUint((uint64(histogram[i])*100/chrsize),10) + ", "
+			sString += strconv.FormatUint(uint64(histogram[i]),10) + ", "
 		} else {
 			if i < 10 {
 			fmt.Print(histogram[i],", ")  // % of read depth
