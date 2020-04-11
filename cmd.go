@@ -208,7 +208,8 @@ func fileExists(filepath string) bool {
 }
 
 func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uint32, maxregionhisto uint32, size int, afile *os.File, rout bool) {
-
+var xp float64  // percentage holder
+var sxp string
 	fmt.Println("first 8 and last values of histogram:", region)
 	for i := 1; i < 8; i++ {
 		fmt.Println("histogram[", i, "] : ", histogram[i])
@@ -235,17 +236,27 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 	fmt.Print("y = c(")
 	sString := "y = c("
 	for i := 1; i < (size-2); i++ {
-		if chrsize != 0  {
-			if i < 10 {
-			fmt.Print((uint64(histogram[i])*100)/chrsize,", ")  // % of read depth
-			}
-			//sString += strconv.FormatUint((uint64(histogram[i])*100/chrsize),10) + ", "
+		if chrsize != 0  {   // can be zero for the zero cnt case
+			// get %
+			xp = 100.0 * float64(histogram[i])/float64(chrsize)
+	fmt.Println(xp)
+	fmt.Printf("%.2f, (",xp)
+			xp = float64(histogram[i]) / float64(chrsize)
+			sxp = fmt.Sprintf("%.2f, ",xp)
+			sString = sString + sxp
+		} else {
 			sString += strconv.FormatUint(uint64(histogram[i]),10) + ", "
+		}
+
+		// printing to std out only do first 10
+		if chrsize != 0  {   // can be zero for the zero cnt case
+				if i < 10 {
+				fmt.Print((uint64(histogram[i])*100)/chrsize,", ")  // % of read depth
+			}
 		} else {
 			if i < 10 {
-			fmt.Print(histogram[i],", ")  // % of read depth
+				fmt.Print(histogram[i],", ")  // % of read depth
 			}
-			sString += strconv.FormatUint(uint64(histogram[i]),10) + ", "
 		}
 		
 	}
