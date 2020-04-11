@@ -225,8 +225,8 @@ var sxp string
 	// output for plotly in R
 	fmt.Println("only first ten values printed see file for more.\n",region, " <- list(")
 	rString := "\n\n" + region + " <- list("
-	fmt.Print("line = list(shape = \"spline\", width = 1), marker = list(size=2), ")
-	rString += "line = list(shape = \"spline\", width = 1), marker = list(size=2), "
+	fmt.Print("line = list(shape = \"spline\", width = 1), marker = list(size=3), ")
+	rString += "line = list(shape = \"spline\", width = 1), marker = list(size=3), "
 	fmt.Print("mode = \"lines+markers\",")
 	rString += "mode = \"lines+markers\","
 	fmt.Print("name = \"",region,"\",")
@@ -306,6 +306,7 @@ var sxp string
 	aStr += "p <- add_trace" 
 	aStr += "(p, line="+region+"$line, mode="+region+"$mode, "
 	aStr += "name="+region+"$name, type="+region+"$type, "
+	aStr += "marker="+region+"$marker, "
 	aStr += "x="+region+"$x, y="+region+"$y, " + "text="+region+"$text, "
 	aStr += "hovertemplate="+region+"$hovertemplate)"
 	
