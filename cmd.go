@@ -55,13 +55,13 @@ func aHisto(r io.Reader, w io.Writer) error {
 	var lastval int
 	lastval = -1
 	var chrSize uint64
-	var histsize = 512
-	var histogram [512]uint32 // depth histogram for whole chromosome 1 - 511 no 0 as this will be to big
+	var histsize = 1024
+	var histogram [1024]uint32 // depth histogram for whole chromosome 1 - 511 no 0 as this will be to big
 	var maxhisto uint32       // region max of histo from 1 to 510
 	var maxzero uint32
 	var maxzerogram uint32
 	var maxzerocon uint32
-	const zerosize = 500
+	const zerosize = 750
 	var zerogram [zerosize]uint32
 	maxhisto = 0
 
