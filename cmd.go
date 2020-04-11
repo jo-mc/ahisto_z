@@ -55,7 +55,7 @@ func aHisto(r io.Reader, w io.Writer) error {
 	var lastval int
 	lastval = -1
 	var chrSize uint64
-	var histsize = 512
+	var histsize =  512
 	var histogram [512]uint32 // depth histogram for whole chromosome 1 - 511 no 0 as this will be to big
 	var maxhisto uint32       // region max of histo from 1 to 510
 	var maxzero uint32
@@ -235,7 +235,7 @@ var sxp string
 
 	fmt.Print("y = c(")
 	sString := "y = c("
-	for i := 1; i < (size-2); i++ {
+	for i := 1; i <= (size-2); i++ {
 		if chrsize != 0  {   // can be zero for the zero cnt case
 			// get %
 			xp = 100.0 * float64(histogram[i])/float64(chrsize)
@@ -260,8 +260,12 @@ var sxp string
 		}
 		
 	}
-	fmt.Print(histogram[size-2])  // omit last value of array which stores count of values above size
-	sString += strconv.FormatUint(uint64(histogram[size-2]),10)
+	// DONT FORGET THE EXTRA VALUE!
+	// fmt.Print(histogram[size-2])  // omit last value of array which stores count of values above size
+	// xp = float64(histogram[size-2]) / float64(chrsize)
+	// sxp = fmt.Sprintf("%.2f, ",xp)
+	// sString = sString + sxp
+	//sString += strconv.FormatUint(uint64(histogram[size-2]),10)
 	fmt.Println("),")
 	sString += "),\n"
 
