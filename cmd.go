@@ -195,6 +195,7 @@ func aHisto(r io.Reader, w io.Writer) error {
 	fmt.Println("><><>< zerogram: ")
 	printRegion(lastRegion, zerogram[:], uint64(maxzero), maxzerogram, maxzerocon, zerosize, afile, false)
 
+	l, err = afile.WriteString("\n\n p <- layout(p, xaxis = list(type = \"log\"), yaxis = list(type = \"log\")) ")
 	l, err = afile.WriteString("\n\np\n")
 	return nil
 }
@@ -224,8 +225,8 @@ var sxp string
 	// output for plotly in R
 	fmt.Println("only first ten values printed see file for more.\n",region, " <- list(")
 	rString := "\n\n" + region + " <- list("
-	fmt.Print("line = list(shape = \"spline\"),")
-	rString += "line = list(shape = \"spline\"),"
+	fmt.Print("line = list(shape = \"spline\", width = 1), marker = list(size=2), ")
+	rString += "line = list(shape = \"spline\", width = 1), marker = list(size=2), "
 	fmt.Print("mode = \"lines+markers\",")
 	rString += "mode = \"lines+markers\","
 	fmt.Print("name = \"",region,"\",")
@@ -247,9 +248,9 @@ var sxp string
 			// fmt.Printf("%.2f, (",xp)
 			xp = float64(histogram[i]) / float64(chruniqCnt)
 			if i == (size - 2) {
-				sxp = fmt.Sprintf("%.2f",xp)  // no comma after last value!
+				sxp = fmt.Sprintf("%.6f",xp)  // no comma after last value!
 			} else {
-				sxp = fmt.Sprintf("%.2f, ",xp)
+				sxp = fmt.Sprintf("%.6f, ",xp)
 			}	
 			sString = sString + sxp
 		} else {
