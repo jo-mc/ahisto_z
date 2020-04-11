@@ -253,6 +253,9 @@ var sxp string
 				sxp = fmt.Sprintf("%.6f, ",xp)
 			}	
 			sString = sString + sxp
+			if (i% 100) == 0 {       // R does not like long lines (prob in thousands?)
+				sString = sString + "\n"
+			}
 		} else {
 			sString += strconv.FormatUint(uint64(histogram[i]),10) 
 			if i < (size-2) {   // add comma if not last
@@ -288,6 +291,9 @@ var sxp string
 			fmt.Print(i,", ")
 		}
 		sString += strconv.Itoa(i) + ", "
+		if (i% 100) == 0 {       // R does not like long lines (prob in thousands?)
+			sString = sString + "\n"
+		}		
 	}
 	fmt.Print(size-2)
 	sString += strconv.Itoa(size-2)
