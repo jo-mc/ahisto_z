@@ -88,7 +88,7 @@ func aHisto(r io.Reader, w io.Writer) error {
 
 		// output file zreogram setup
 		dft := t.Format("060102T1504") + "_zeroHist.R"
-		zfile, err := os.Create(ft)
+		zfile, err := os.Create(dft)
 		check(err)
 		defer zfile.Close()
 		// write header
