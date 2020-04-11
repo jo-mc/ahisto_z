@@ -55,13 +55,13 @@ func aHisto(r io.Reader, w io.Writer) error {
 	var lastval int
 	lastval = -1
 	var chrSize uint64
-	var histsize =  512
+	var histsize =  10 //512
 	var histogram [512]uint32 // depth histogram for whole chromosome 1 - 511 no 0 as this will be to big
 	var maxhisto uint32       // region max of histo from 1 to 510
 	var maxzero uint32
 	var maxzerogram uint32
 	var maxzerocon uint32
-	const zerosize =  500
+	const zerosize =  10 //500
 	var zerogram [zerosize]uint32
 	maxhisto = 0
 
@@ -235,13 +235,17 @@ var sxp string
 
 	fmt.Print("y = c(")
 	sString := "y = c("
+	var chruniqCnt uint32
+	for i := 1; i<= (size-2); i++ {
+		chruniqCnt += histogram[i]
+	}
 	for i := 1; i <= (size-2); i++ {
 		if chrsize != 0  {   // can be zero for the zero cnt case
 			// get %
-			xp = 100.0 * float64(histogram[i])/float64(chrsize)
-	fmt.Println(xp)
-	fmt.Printf("%.2f, (",xp)
-			xp = float64(histogram[i]) / float64(chrsize)
+			xp = 100.0 * float64(histogram[i])/float64(chruniqCnt)
+			fmt.Println(xp)
+			fmt.Printf("%.2f, (",xp)
+			xp = float64(histogram[i]) / float64(chruniqCnt)
 			sxp = fmt.Sprintf("%.2f, ",xp)
 			sString = sString + sxp
 		} else {
