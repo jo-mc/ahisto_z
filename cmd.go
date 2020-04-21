@@ -158,6 +158,11 @@ func aHisto(r io.Reader, w io.Writer) error {
 			maxzerogram = 0
 			lastval = -1
 			chrSize = 0
+
+			if regionName == "chrM" {
+				break  // only get the primary chromosomes
+			}
+
 		}
 		// end new region test
 		//fmt.Println(newval)
@@ -226,7 +231,7 @@ func fileExists(filepath string) bool {
 }
 
 func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uint32, maxregionhisto uint32, size int, afile *os.File, rout bool) {
-	var xp float64 // percentage holder
+	// var xp float64 // percentage holder
 	var sxp string
 	var dpthMax int
 	fmt.Println("first 8 and last values of histogram:", region)
@@ -269,7 +274,7 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 	for i := 1; i <= (size - 2); i++ {
 		if chrsize != 0 { // can be zero for the zero cnt case
 			// get %
-			xp = 100.0 * float64(histogram[i]) / float64(chruniqCnt)
+/* 			xp = 100.0 * float64(histogram[i]) / float64(chruniqCnt)
 			// fmt.Println(xp)   // test
 			// fmt.Printf("%.2f, (",xp)
 			xp = float64(histogram[i]) / float64(chruniqCnt)
@@ -277,7 +282,10 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 				sxp = fmt.Sprintf("%.6f", xp) // no comma after last value!
 			} else {
 				sxp = fmt.Sprintf("%.6f, ", xp)
-			}
+			} */
+// Using histogram uint value in ahisto_z
+			fmt.Print(histogram[i], ", ")
+
 			sString = sString + sxp
 			if (i % 100) == 0 { // R does not like long lines (prob in thousands?)
 				sString = sString + "\n"
