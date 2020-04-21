@@ -172,12 +172,12 @@ func aHisto(r io.Reader, w io.Writer) error {
 			}
 			// zero con chr out
 			aStr := lastRegion + "\n"
-			aStr = ""
 			_, err = zchrfile.WriteString(aStr)
+			aStr = ""
 			if err != nil {
 				fmt.Println(err, " Error writing region ", lastRegion, " to ", zchrfile.Name())
 			}
-			aStr = aStr + "consec:\n"
+			aStr = aStr + "\nconsec:\n"
 			for k := uint(0); k <= zc; k++ {
 				aStr = aStr + fmt.Sprintf("%d, ", zconChrpos[k][0])
 				if ((k + 1) % 100) == 0 { // R does not like long lines (prob in thousands?)
