@@ -57,13 +57,16 @@ func aHisto(r io.Reader, w io.Writer) error {
 	var chrSize uint64
 	var histsize = 1024
 	var histogram [1024]uint32 // depth histogram for whole chromosome 1 - 511 no 0 as this will be to big
-	var maxhisto uint32       // region max of histo from 1 to 510
+	var maxhisto uint32        // region max of histo from 1 to 510
 	var maxzero uint32
 	var maxzerogram uint32
 	var maxzerocon uint32
 	const zerosize = 750
 	var zerogram [zerosize]uint32
 	maxhisto = 0
+	var zc uint
+	zc = 0
+	var zconChrpos [10000][2]uint32
 
 	var maxregionhisto uint32
 	//	var regionpercenthistogram[512] uint // region % histogram
@@ -86,19 +89,33 @@ func aHisto(r io.Reader, w io.Writer) error {
 	}
 	// end file setup
 
-		// output file zreogram setup
-		dft := t.Format("060102T1504") + "_zeroHist.R"
-		zfile, err := os.Create(dft)
-		check(err)
-		defer zfile.Close()
-		// write header
-		l, err = zfile.WriteString("p <- plot_ly()\n")
-		if err != nil {
-			fmt.Println(err, " Error writing zero header to ", dft)
-		} else {
-			fmt.Println(l, "bytes of Header written to ", dft)
-		}
-		// end file setup
+	// output file zreogram setup
+	dft := t.Format("060102T1504") + "_zeroHist.R"
+	zfile, err := os.Create(dft)
+	check(err)
+	defer zfile.Close()
+	// write header
+	l, err = zfile.WriteString("p <- plot_ly()\n")
+	if err != nil {
+		fmt.Println(err, " Error writing zero header to ", dft)
+	} else {
+		fmt.Println(l, "bytes of Header written to ", dft)
+	}
+	// end file setup
+
+	// outfile zeroconsec chr pos output
+	zft := t.Format("060102T1504") + "_zeroconChr.R"
+	zchrfile, err := os.Create(zft)
+	check(err)
+	defer zchrfile.Close()
+	// write header
+	l, err = zchrfile.WriteString("Pair of data, no of consc zeros, and pos on chr, by chr region\n")
+	if err != nil {
+		fmt.Println(err, " Error writing zero header to ", zft)
+	} else {
+		fmt.Println(l, "bytes of Header written to ", zft)
+	}
+	// end zero out chr
 
 	for {
 		// text expected "chr1  1   1" region, position , readdepth
@@ -153,6 +170,33 @@ func aHisto(r io.Reader, w io.Writer) error {
 			for i := range zerogram {
 				zerogram[i] = 0
 			}
+			// zero con chr out
+			aStr := lastRegion + "\n"
+			aStr = ""
+			_, err = zchrfile.WriteString(aStr)
+			if err != nil {
+				fmt.Println(err, " Error writing region ", lastRegion, " to ", zchrfile.Name())
+			}
+			aStr = aStr + "consec:\n"
+			for k := uint(0); k <= zc; k++ {
+				aStr = aStr + fmt.Sprintf("%d, ", zconChrpos[k][0])
+				if ((k + 1) % 100) == 0 { // R does not like long lines (prob in thousands?)
+					aStr = aStr + "\n"
+				}
+			}
+			aStr = aStr + "\npos:\n"			
+			for k := uint(0); k <= zc; k++ {
+				aStr = aStr + fmt.Sprintf("%d, ", zconChrpos[k][1])
+				if ((k + 1) % 100) == 0 { // R does not like long lines (prob in thousands?)
+					aStr = aStr + "\n"
+				}
+			}
+			// out end
+			_, err = zchrfile.WriteString(aStr)
+			if err != nil {
+				fmt.Println(err, " Error writing region ", lastRegion, " to ", zchrfile.Name())
+			}
+			// end zero chr out
 			maxzero = 0
 			maxzerocon = 0
 			maxzerogram = 0
@@ -160,7 +204,7 @@ func aHisto(r io.Reader, w io.Writer) error {
 			chrSize = 0
 
 			if regionName == "chrM" {
-				break  // only get the primary chromosomes
+				break // only get the primary chromosomes
 			}
 
 		}
@@ -190,6 +234,15 @@ func aHisto(r io.Reader, w io.Writer) error {
 				maxzerocon = maxzero
 			} else {
 				zerogram[maxzero] = zerogram[maxzero] + 1
+				zconChrpos[zc][0] = uint32(maxzero)
+				zconChrpos[zc][1] = uint32(chrSize)
+
+				if zc >= 9999 {
+					fmt.Println("two many zero consecs > 9999")
+				} else {
+					zc = zc + 1
+				}
+
 			}
 			maxzero = 0
 			for i := 1; i < (zerosize - 1); i++ {
@@ -213,7 +266,7 @@ func aHisto(r io.Reader, w io.Writer) error {
 	/* printRegion(lastRegion, histogram[:], chrSize, maxhisto, maxregionhisto, histsize, afile, true)
 	fmt.Println("><><>< zerogram: ")
 	printRegion(lastRegion, zerogram[:], uint64(maxzero), maxzerogram, maxzerocon, zerosize, zfile, true)
- */
+	*/
 	l, err = afile.WriteString("\n\n p <- layout(p, xaxis = list(type = \"log\"), yaxis = list(type = \"log\")) ")
 	l, err = afile.WriteString("\n\np\n")
 
@@ -247,18 +300,18 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 			dpthMax = i
 		}
 	}
-	fmt.Println("Maximum depth count 1-", size-1, ": ", maxhisto," corresponding to read depth of ", dpthMax)
+	fmt.Println("Maximum depth count 1-", size-1, ": ", maxhisto, " corresponding to read depth of ", dpthMax)
 	fmt.Println("Maximum depth found : ", maxregionhisto)
 	fmt.Println("Zero count : ", histogram[0])
 
 	// output for plotly in R
 	//debug
-/* 	fmt.Println("only first ten values printed see file for more.\n", region, " <- list(")
-	fmt.Print("line = list(shape = \"spline\", width = 1), marker = list(size=3), ")
-	fmt.Print("mode = \"lines+markers\",")
-	fmt.Print("name = \"", region, "\",")
-	fmt.Print("type = \"scatter\",")
-	fmt.Print("y = c(") */
+	/* 	fmt.Println("only first ten values printed see file for more.\n", region, " <- list(")
+	   	fmt.Print("line = list(shape = \"spline\", width = 1), marker = list(size=3), ")
+	   	fmt.Print("mode = \"lines+markers\",")
+	   	fmt.Print("name = \"", region, "\",")
+	   	fmt.Print("type = \"scatter\",")
+	   	fmt.Print("y = c(") */
 
 	rString := "\n\n" + region + " <- list("
 	rString += "line = list(shape = \"spline\", width = 1), marker = list(size=3), "
@@ -274,16 +327,16 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 	for i := 1; i <= (size - 2); i++ {
 		if chrsize != 0 { // can be zero for the zero cnt case
 			// get %
-/* 			xp = 100.0 * float64(histogram[i]) / float64(chruniqCnt)
-			// fmt.Println(xp)   // test
-			// fmt.Printf("%.2f, (",xp)
-			xp = float64(histogram[i]) / float64(chruniqCnt)
-			if i == (size - 2) {
-				sxp = fmt.Sprintf("%.6f", xp) // no comma after last value!
-			} else {
-				sxp = fmt.Sprintf("%.6f, ", xp)
-			} */
-// Using histogram uint value in ahisto_z
+			/* 			xp = 100.0 * float64(histogram[i]) / float64(chruniqCnt)
+			   			// fmt.Println(xp)   // test
+			   			// fmt.Printf("%.2f, (",xp)
+			   			xp = float64(histogram[i]) / float64(chruniqCnt)
+			   			if i == (size - 2) {
+			   				sxp = fmt.Sprintf("%.6f", xp) // no comma after last value!
+			   			} else {
+			   				sxp = fmt.Sprintf("%.6f, ", xp)
+			   			} */
+			// Using histogram uint value in ahisto_z
 			sxp = fmt.Sprintf("%d,", histogram[i])
 
 			sString = sString + sxp
@@ -299,19 +352,19 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 
 		// printing to std out only do first 10
 		// debug R gen
-/* 		if chrsize != 0 { // can be zero for the zero cnt case
-			if i < 10 {
-				fmt.Print((uint64(histogram[i])*100)/chrsize, ", ") // % of read depth
+		/* 		if chrsize != 0 { // can be zero for the zero cnt case
+				if i < 10 {
+					fmt.Print((uint64(histogram[i])*100)/chrsize, ", ") // % of read depth
+				}
+			} else {
+				if i < 10 {
+					fmt.Print(histogram[i], ", ") // % of read depth
+				}
 			}
-		} else {
-			if i < 10 {
-				fmt.Print(histogram[i], ", ") // % of read depth
-			}
-		} 
-	fmt.Println("),")
-	fmt.Print("x = c(") */
+		fmt.Println("),")
+		fmt.Print("x = c(") */
 
-	}  // end histogram loop
+	} // end histogram loop
 
 	// DONT FORGET THE EXTRA VALUE!
 	// fmt.Print(histogram[size-2])  // omit last value of array which stores count of values above size
@@ -321,7 +374,6 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 	//sString += strconv.FormatUint(uint64(histogram[size-2]),10)
 
 	sString += "),\n"
-
 
 	sString += "x = c("
 	for i := 1; i < (size - 2); i++ {
@@ -338,9 +390,9 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 	sString += "),\n"
 
 	// debug R
-/* 	fmt.Print(size - 2)
-	fmt.Println("),")
-	fmt.Print(")\n") */
+	/* 	fmt.Print(size - 2)
+	   	fmt.Println("),")
+	   	fmt.Print(")\n") */
 
 	aStr := "hovertemplate = \"Depth: %{x}\""
 	aStr += ")\n"
@@ -351,8 +403,8 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 	aStr += "x=" + region + "$x, y=" + region + "$y, " + "text=" + region + "$text, "
 	aStr += "hovertemplate=" + region + "$hovertemplate)"
 
-	// debug R	
-/* 	fmt.Println(aStr) */
+	// debug R
+	/* 	fmt.Println(aStr) */
 
 	if rout {
 		_, err := afile.WriteString(rString)
