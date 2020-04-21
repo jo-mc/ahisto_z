@@ -210,10 +210,10 @@ func aHisto(r io.Reader, w io.Writer) error {
 			maxzerogram = zerogram[i]
 		}
 	}
-	printRegion(lastRegion, histogram[:], chrSize, maxhisto, maxregionhisto, histsize, afile, true)
+	/* printRegion(lastRegion, histogram[:], chrSize, maxhisto, maxregionhisto, histsize, afile, true)
 	fmt.Println("><><>< zerogram: ")
 	printRegion(lastRegion, zerogram[:], uint64(maxzero), maxzerogram, maxzerocon, zerosize, zfile, true)
-
+ */
 	l, err = afile.WriteString("\n\n p <- layout(p, xaxis = list(type = \"log\"), yaxis = list(type = \"log\")) ")
 	l, err = afile.WriteString("\n\np\n")
 
@@ -284,7 +284,7 @@ func printRegion(region string, histogram []uint32, chrsize uint64, maxhisto uin
 				sxp = fmt.Sprintf("%.6f, ", xp)
 			} */
 // Using histogram uint value in ahisto_z
-			fmt.Print(histogram[i], ", ")
+			sxp = fmt.Sprintf("%d,", histogram[i])
 
 			sString = sString + sxp
 			if (i % 100) == 0 { // R does not like long lines (prob in thousands?)
